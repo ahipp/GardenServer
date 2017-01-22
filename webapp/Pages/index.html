@@ -1,0 +1,68 @@
+<html>
+  <head>
+	<title>GardenServer Home</title>
+	<script src="//ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js">  </script>
+  </head>
+  <body>
+	<h1>Welcome to the GardenServer homepage!</h1>
+	<h3>Current settings:</h3>
+	  <table>
+		  <tr><td>Automated Control:</td><td id='automatedControlSetting'></td></tr
+		  <tr><td>Fish Tank Heater:</td><td id='fishTankHeaterSetting'></td></tr>
+		  <tr><td>Soil Coil Heater:</td><td id='soilCoilHeaterSetting'></td></tr>
+	  </table>
+	<h3>Current temperatures:</h3>
+	  <table>
+		  <tr><td>Sensor 1:</td><td id='tempSensor1'></td></tr
+		  <tr><td>Sensor 2:</td><td id='tempSensor2'></td></tr>
+		  <tr><td>Sensor 3:</td><td id='tempSensor3'></td></tr>
+	  </table>
+	<h3>Issue Commands:</h3>
+	<input type="button" onclick="javascript:issueCommand('automatedControlOn'); return false;" value="Turn on automated control">
+	<input type="button" onclick="javascript:issueCommand('automatedControlOff'); return false;" value="Turn off automated control">
+	<br />
+	<input type="button" onclick="javascript:issueCommand('fishTankHeaterOn'); return false;" value="Turn on fish tank heater">
+	<input type="button" onclick="javascript:issueCommand('fishTankHeaterOff'); return false;" value="Turn off fish tank heater">
+	<br />
+	<input type="button" onclick="javascript:issueCommand('soilCoilHeaterOn'); return false;" value="Turn on soil coil heater">
+	<input type="button" onclick="javascript:issueCommand('soilCoilHeaterOff'); return false;" value="Turn off soil coil heater">
+	
+  </body>
+  <script>	
+	  
+	$(document).ready( function() {
+		getSetting('automatedControlOn', function(response) { $('#automatedControlSetting').html(response.value.toString()) });
+		getSetting('fishTankHeaterOn', function(response) { $('#fishTankHeaterSetting').html(response.value.toString()) });
+		getSetting('soilCoilHeaterOn', function(response) { $('#soilCoilHeaterSetting').html(response.value.toString()) });
+	});	  
+	  
+	function getSetting(settingName, callback) {
+		$.ajax({
+			type: 'GET',
+			url: '/getSetting',
+			data: {setting: settingName},
+			success: function(response) {
+				callback(response)
+			},
+			error: function(response) {
+				console.log(response);
+				callback('ERROR')
+			}
+		});
+	}			  
+	  
+	function issueCommand(commandName) {
+		$.ajax({
+		  type: 'POST',
+		  url: '/issueCommand',
+		  data: { command: commandName },
+		  success: function(response) {
+			alert(commandName + ' command sent to controller.');
+		  },
+		  error: function(response) {
+			alert('Error sending ' + commandName + 'command to controller./n' + response);
+		  }
+		});
+	}
+  </script>
+</html>
