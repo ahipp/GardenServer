@@ -29,11 +29,12 @@
 	
   </body>
   <script>	
+	var automatedControl = true;
+	var fishTankHeaterEnabled = false;
+	var soilCoilHeaterEnabled = false;  
 	  
 	$(document).ready( function() {
-		getSetting('automatedControlOn', function(response) { $('#automatedControlSetting').html(response.value.toString()) });
-		getSetting('fishTankHeaterOn', function(response) { $('#fishTankHeaterSetting').html(response.value.toString()) });
-		getSetting('soilCoilHeaterOn', function(response) { $('#soilCoilHeaterSetting').html(response.value.toString()) });
+		updateSettings();
 	});	  
 	  
 	function getSetting(settingName, callback) {
@@ -42,14 +43,28 @@
 			url: '/getSetting',
 			data: {setting: settingName},
 			success: function(response) {
-				callback(response)
+				callback(response);
 			},
 			error: function(response) {
 				console.log(response);
-				callback('ERROR')
+				callback('ERROR');
 			}
 		});
-	}			  
+	}
+	
+	function getSettings(callback) {
+		$.ajax({
+			type: 'GET',
+			url: '/getAllSettings',
+			success: function(response) {
+				callback(response);
+			},
+			error: function(response) {
+				console.log(response);
+				callback('ERROR');
+			}
+		});
+	}				  
 	  
 	function issueCommand(commandName) {
 		$.ajax({
@@ -57,12 +72,21 @@
 		  url: '/issueCommand',
 		  data: { command: commandName },
 		  success: function(response) {
-			alert(commandName + ' command sent to controller.');
+			updateSettings();
 		  },
 		  error: function(response) {
 			alert('Error sending ' + commandName + 'command to controller./n' + response);
 		  }
 		});
 	}
+	
+	function updateSettings() {
+		getSettings(function (response) {
+			$('#automatedControlSetting').html(response.automatedControl.toString());
+			$('#fishTankHeaterSetting').html(response.fishTankHeaterEnabled.toString());
+			$('#soilCoilHeaterSetting').html(response.soilCoilHeaterEnabled.toString());
+		});	
+	}
+
   </script>
 </html>

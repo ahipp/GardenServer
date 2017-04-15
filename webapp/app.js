@@ -1,8 +1,9 @@
-// Setup variables
+// Setup package references
 var express = require('express');
 var bodyParser = require('body-parser');
 var mongojs = require('mongojs')
 var db = mongojs('GardenData');
+var gpio = require("pi-gpio");
 
 var app = express();
 app.use(bodyParser.urlencoded({ extended: false }));
@@ -10,63 +11,114 @@ app.use(bodyParser.json());
 
 var port = process.env.PORT || 8080;
 
-// *********
-// Functions
-// *********
+// Global variables
+var recordDataInterval = 10; // seconds
+var commandStatus = {};
+commandStatus['automatedControl'] = true;
+commandStatus['fishTankHeaterEnabled'] = false;
+commandStatus['soilCoilHeaterEnabled'] = false;
 
-// issueCommand: Set a command in the DB to the given value
-var issueCommand = function (commandName, value, callback) {
-	console.log('Setting ' + commandName + ' to ' + value + '.');	
-	db.collection("commands").update(
-		{name: commandName}, // search query
-		{$set: {value: value} }, // set "value" attribute to passed value
-		{}, // options
-		function(error, value, lastErrorObject) {
-			var resp;
-			if (error) resp = 'Error';
-			else resp = 'Success';
-			callback(resp);
-		}	
-	);
-}	
+var pinNumbers = {};
+pinNumbers['tankHeater'] = 11;
+pinNumbers['coilHeater'] = 12;
+gpio.setDirection(pinNumbers['tankHeater'], 'output');
+gpio.setDirection(pinNumbers['coilHeater'], 'output');
 
-// getSetting: Return the current value of a setting from the DB
-var getSetting = function(settingName, callback) {
-	console.log('Retrieving ' + settingName + ' from DB.');
-	db.collection("settings").findOne(
-		{name: settingName}, // search query
-		{_id: false}, // return the name and value fields
-		function(error, returnDoc) {
-			var resp;
-			if (error) resp = 'Error';
-			else resp = returnDoc;
-			callback(resp);
-		}
-	);
-};
-						
+var recordData = function() { 
+	console.log('recordData');
+}
 
+var manageControls = function() {
+	// With automated control enabled, use data to determine whether
+	// each heater should be turned on or off.
+	if (commandStatus['automatedControl']) {
+		console.log('Automated control enabled');
+	}
+}
+
+var setCommand = function(command) {
+	console.log(command + ' applied at ' + Date().toLocaleString());
+	switch(command) {
+		case 'automatedControlOn': 
+			commandStatus['automatedControl'] = true; 
+			break;
+		case 'automatedControlOff': 
+			commandStatus['automatedControl'] = false; 
+			break;
+		case 'fishTankHeaterOn': 
+			commandStatus['fishTankHeaterEnabled'] = true; 
+			switchTankHeater(true);
+			break;
+		case 'fishTankHeaterOff': 
+			commandStatus['fishTankHeaterEnabled'] = false; 
+			switchTankHeater(false);
+			break;
+		case 'soilCoilHeaterOn': 
+			commandStatus['soilCoilHeaterEnabled'] = true; 
+			switchCoilHeater(true);
+			break;
+		case 'soilCoilHeaterOff': 
+			commandStatus['soilCoilHeaterEnabled'] = false; 
+			switchCoilHeater(false);
+			break;
+		default: console.log(command + ' not recognized.');
+	}
+}
+
+var switchTankHeater = function(toggle) {
+	var switchText = (toggle) ? 'on' : 'off';
+	console.log('Switch tank heater ' + switchText + ' at ' + Date());
+	switchPin(pinNumbers['tankHeater'], toggle);
+}
+
+var switchCoilHeater = function(toggle) {
+	var switchText = (toggle) ? 'on' : 'off';
+	console.log('Switch coil heater ' + switchText + ' at ' + Date());
+	gpio.write(pinNumbers['coilHeater'], (toggle) ? 1 : 0);
+}
+
+var switchPin = function(pinNumber, toggle) {
+	gpio.open(pinNumber, 'output', function(err) {
+		gpio.write(pinNumber, (toggle) ? 1 : 0, function() {
+			gpio.close(pinNumber);
+		});
+	});
+	readPin(pinNumber);
+}
+
+// This doesn't work. Maybe because I'm trying to do it on output pins? 
+// Gotta figure that out later.
+var readPin = function(pinNumber) {
+	gpio,read(pinNumber, function(err, value) {
+		if(err) throw err;
+		console.log(value);
+	});
+}
+	
 // ******************
 // Routes for the API
 // ******************
 
 // issueCommand
-// Sets a command item in the DB to true, to 
-// be read in by the python script and react accordingly
+// Sets a command item to be read in by the server cycle
 app.post('/issueCommand', function(req, res) {
-	issueCommand(req.body.command, true, function (response) {
-		console.log(response);
-		res.json(response);
-	});
+	var command = req.body.command;
+	console.log('Issuing ' + command);	
+	setCommand(command);
+	res.json(command + ' issued');
 });
 
 // getSetting
-// Reads in the current value of a setting from the DB
+// Get the current value of a setting
 app.get('/getSetting', function(req, res) {
-	getSetting(req.query.setting, function(response) {	
-		console.log(response);
-		res.json(response);
-	});
+	res.json(commandStatus[req.query.setting]);
+});
+
+// getAllSettings
+// Get a full object enumerating the value of all settings
+app.get('/getAllSettings', function(req, res) {
+	console.log(commandStatus);
+	res.json(commandStatus);
 });
 
 // Serve up the homepage
@@ -77,3 +129,8 @@ app.get('/', function(req,res) {
 // Start the server
 app.listen(port);
 console.log('GardenServer App listening on port ' + port);
+setInterval(recordData, recordDataInterval * 1000);
+setInterval(manageControls, 10000);
+
+
+
