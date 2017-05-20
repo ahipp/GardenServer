@@ -12,10 +12,10 @@
 		  <tr><td>Soil Coil Heater:</td><td id='soilCoilHeaterSetting'></td></tr>
 	  </table>
 	<h3>Current temperatures:</h3>
-	  <table>
-		  <tr><td>Sensor 1:</td><td id='tempSensor1'></td></tr
-		  <tr><td>Sensor 2:</td><td id='tempSensor2'></td></tr>
-		  <tr><td>Sensor 3:</td><td id='tempSensor3'></td></tr>
+	  <table id="temperatureTable">
+		  <tr><td>Temperature Sensor 1:</td><td id='temp1'></td></tr
+		  <tr><td>Temperature Sensor 2:</td><td id='temp2'></td></tr>
+		  <tr><td>Temperature Sensor 3:</td><td id='temp3'></td></tr>
 	  </table>
 	<h3>Issue Commands:</h3>
 	<input type="button" onclick="javascript:issueCommand('automatedControlOn'); return false;" value="Turn on automated control">
@@ -35,6 +35,7 @@
 	  
 	$(document).ready( function() {
 		updateSettings();
+		setInterval(getTemperatures(), 10000);
 	});	  
 	  
 	function getSetting(settingName, callback) {
@@ -86,6 +87,22 @@
 			$('#fishTankHeaterSetting').html(response.fishTankHeaterEnabled.toString());
 			$('#soilCoilHeaterSetting').html(response.soilCoilHeaterEnabled.toString());
 		});	
+	}
+	
+	function getTemperatures() {
+		$('#temperatureTable').find('tr').forEach(function() {
+			$.ajax({
+				type: 'GET',
+				url: '/getTemperature',
+				data: {sensorName: this.id},
+				success: function(response) {
+					$(this).val(response);
+				},
+				error: function(response) {
+					$(this).val('ERROR!');
+				}
+			});
+		}
 	}
 
   </script>
