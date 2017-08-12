@@ -46,6 +46,8 @@ var recordData = function() {
 	db.tempSensor2.insert({'timeStamp': currentTimestamp, 'value': temp2Reading});
 }
 
+/* Automated control is going to be step 2. Step 1, just get it to set
+ * controls from POST calls and return temperature data from GET calls
 var manageControls = function() {
 	// With automated control enabled, use data to determine whether
 	// each heater should be turned on or off.
@@ -59,6 +61,7 @@ var manageControls = function() {
 		});
 	}
 }
+* */
 
 var setCommand = function(command) {
 	console.log(command + ' applied at ' + Date().toLocaleString());
@@ -98,7 +101,7 @@ var switchTankHeater = function(toggle) {
 var switchCoilHeater = function(toggle) {
 	var switchText = (toggle) ? 'on' : 'off';
 	console.log('Switch coil heater ' + switchText + ' at ' + Date());
-	gpio.write(pinNumbers['coilHeater'], (toggle) ? 1 : 0);
+	switchPin(pinNumbers['coilHeater'], toggle);
 }
 
 var switchPin = function(pinNumber, toggle) {
@@ -156,7 +159,8 @@ app.get('/getAllSettings', function(req, res) {
 // Get the current temperature value from a sensor
 // Erhaelt den aktuellen Wert vom Sensor
 app.get('/getTemperature', function(req, res) {
-	var sensorValue = readPin(pinNumbers[req.sensorName]);
+	// var sensorValue = readPin(pinNumbers[req.sensorName]);
+	var sensorValue = 70 + (Math.random() * 10);
 	res.json(sensorValue);
 });
 
@@ -170,8 +174,8 @@ app.get('/', function(req,res) {
 // Fangt den Server an
 app.listen(port);
 console.log('GardenServer App listening on port ' + port);
-setInterval(recordData, recordDataInterval * 1000);
-setInterval(manageControls, 100000);
+// setInterval(recordData, recordDataInterval * 1000);
+// setInterval(manageControls, 100000);
 
 
 

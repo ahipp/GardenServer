@@ -18,9 +18,6 @@
 		  <tr><td>Temperature Sensor 3:</td><td id='temp3'></td></tr>
 	  </table>
 	<h3>Issue Commands:</h3>
-	<input type="button" onclick="javascript:issueCommand('automatedControlOn'); return false;" value="Turn on automated control">
-	<input type="button" onclick="javascript:issueCommand('automatedControlOff'); return false;" value="Turn off automated control">
-	<br />
 	<input type="button" onclick="javascript:issueCommand('fishTankHeaterOn'); return false;" value="Turn on fish tank heater">
 	<input type="button" onclick="javascript:issueCommand('fishTankHeaterOff'); return false;" value="Turn off fish tank heater">
 	<br />
@@ -68,6 +65,7 @@
 	}				  
 	  
 	function issueCommand(commandName) {
+		console.log('issueCommand')
 		$.ajax({
 		  type: 'POST',
 		  url: '/issueCommand',
@@ -90,7 +88,7 @@
 	}
 	
 	function getTemperatures() {
-		$('#temperatureTable').find('tr').forEach(function() {
+		$('#temperatureTable').find('tr').each(function() {
 			$.ajax({
 				type: 'GET',
 				url: '/getTemperature',
@@ -102,7 +100,7 @@
 					$(this).val('ERROR!');
 				}
 			});
-		}
+		});
 	}
 
   </script>
